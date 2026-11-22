@@ -1,0 +1,67 @@
+{
+ "users": [
+  {
+   "id": 1,
+   "email": "ipvikas@gmail.com",
+   "name": "Vikas",
+   "role": "donor",
+   "status": "active",
+   "addr": "pending",
+   "mobile": "9881143671",
+   "society": "Suyog Pearl",
+   "pin": "411013",
+   "map": "https://maps.app.goo.gl/9ov9txi7GxmTFgkC8"
+  },
+  {
+   "id": 2,
+   "email": "pivikas@hotmail.com",
+   "name": "Admin",
+   "role": "reader",
+   "status": "active",
+   "addr": "pending",
+   "mobile": "9604816061",
+   "society": "Admin Home",
+   "pin": "801105",
+   "map": "https://maps.app.goo.gl/iY1u4muKe2k3JJVS8"
+  },
+  {
+   "id": 5,
+   "email": "ipvikastwo@gmail.com",
+   "name": "ipvikasTWO",
+   "role": "reader",
+   "status": "active",
+   "addr": "none"
+  }
+ ],
+ "otps": {
+  "admin@test.com": {
+   "code": "185362",
+   "exp": 1795341272095,
+   "tries": 0
+  }
+ },
+ "sessions": {
+  "ba7b6b18d0b2332845f71d5ac0a6cfe1239cfa3a4191c385": 1,
+  "8f039af86fb3196216168fad45c140df1a44121d2adcd332": 2,
+  "2723596fa801dc7befa6ab75e1fc1dbdcdb8687c49f42e5a": 5
+ },
+ "copies": [],
+ "wish": [
+  {
+   "id": 3,
+   "uid": 2,
+   "title": "Mgmt Rules",
+   "date": "2026-11-22"
+  },
+  {
+   "id": 4,
+   "uid": 2,
+   "title": "Python Tricks",
+   "date": "2026-11-22"
+  }
+ ],
+ "orders": [],
+ "loans": [],
+ "points": [],
+ "seq": 6
+}

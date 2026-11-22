@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pune Community Library</title>
+<style>
+:root{--bg:#eef2f1;--ink:#16211f;--card:#fff;--line:#c9d6d3;--acc:#1f5b50;--btn:#fff;--bad:#a4281f}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1715;--ink:#e4efec;--card:#18231f;--line:#2b3b37;--acc:#7cc9b5;--btn:#0f1715;--bad:#ff9d94}}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.55 Charter,"Iowan Old Style",Georgia,serif}
+main{max-width:880px;margin:auto;padding:18px}
+h1{font-size:1.9rem;margin:.2em 0 .4em;letter-spacing:-.01em}
+h2{font-size:1.1rem;margin:0 0 .5em}
+.card{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--acc);border-radius:3px;padding:12px 14px;margin:12px 0}
+input,select,button{font:inherit;font-size:.92rem;padding:6px 9px;margin:3px 4px 3px 0;border:1px solid var(--line);border-radius:3px;background:var(--card);color:var(--ink);max-width:100%}
+button{background:var(--acc);color:var(--btn);border-color:var(--acc);cursor:pointer}
+button.s{background:transparent;color:var(--acc)}
+button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+a{color:var(--acc)}small{opacity:.8}.err{color:var(--bad);min-height:1.4em}.row{padding:6px 0;border-top:1px solid var(--line)}
+</style></head><body><main id="app"></main>
+<script>
+let T=localStorage.getItem('t'),S,CAT=[],msg='';
+const $=s=>document.querySelector(s),v=i=>document.getElementById(i).value;
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+async function api(p,b){const r=await fetch('/api/'+p,{method:b?'POST':'GET',headers:{'Content-Type':'application/json',Authorization:'Bearer '+(T||'')},body:b?JSON.stringify(b):undefined});
+  const j=await r.json();if(j.error)throw j.error;return j}
+async function go(p,b){try{await api(p,b);msg=''}catch(e){msg=e}load()}
+const ask=(q,d)=>prompt(q,d);const dt=()=>ask('Date (YYYY-MM-DD)',new Date().toISOString().slice(0,10));
+function logout(){T=null;localStorage.removeItem('t');msg='';load()}
+function loginView(){$('#app').innerHTML=`<h1>Pune Community Library</h1><div class=card><h2>Log in with an email code</h2>
+<input id=em type=email placeholder="Your email" autocomplete=email><button onclick=sendOtp()>Send code</button>
+<div id=o2 hidden><input id=otp placeholder="6-digit code" inputmode=numeric><input id=nm placeholder="Your name (new users)">
+<select id=rl><option value=reader>I want to read books<option value=donor>I want to donate books</select><button onclick=doLogin()>Log in</button></div>
+<p class=err role=alert>${esc(msg)}</p></div>`}
+async function sendOtp(){try{const r=await api('otp',{email:v('em')});$('#o2').hidden=false;msg=r.devOtp?'Test mode code: '+r.devOtp:'Code sent. In local mode it is printed in the server window.'}catch(e){msg=e}$('.err').textContent=msg}
+async function doLogin(){try{const r=await api('login',{email:v('em'),otp:v('otp'),name:v('nm'),role:v('rl')});T=r.token;localStorage.setItem('t',T);msg='';load()}catch(e){msg=e;$('.err').textContent=e}}
+async function load(){if(!T)return loginView();
+  try{S=await api('me')}catch(e){T=null;localStorage.removeItem('t');msg=e;return loginView()}
+  const A=S.user.role==='admin'?await api('admin/state'):null;CAT=S.user.role==='reader'?await api('catalogue'):[];render(A)}
+const P=p=>p.name?`${esc(p.name)}, ${esc(p.mobile)}, ${esc(p.society)} ${esc(p.pin)} <a href="${esc(p.maps)}" target=_blank rel=noopener>map</a>`:'not set';
+function render(A){const u=S.user,ok={ok:'validated',pending:'waiting for admin check',rejected:'rejected, please correct',none:'not added yet'}[u.addr];
+  let h=`<h1>Pune Community Library</h1><div class=card>${esc(u.email)}, ${u.role}. Points: <b>${S.points}</b> <button class=s onclick=logout()>Log out</button></div><p class=err role=alert>${esc(msg)}</p>`;
+  h+=`<div class=card><h2>Your address <small>(${ok})</small></h2><input id=pn placeholder=Name value="${esc(u.name)}"><input id=pm placeholder="Mobile (shared only with the courier)" value="${esc(u.mobile)}"><input id=ps placeholder="Society name" value="${esc(u.society)}"><input id=pp placeholder="Pune PIN code" value="${esc(u.pin)}"><input id=pg placeholder="Google Maps link" value="${esc(u.map)}"><button onclick="go('profile',{name:v('pn'),mobile:v('pm'),society:v('ps'),pin:v('pp'),map:v('pg')})">Save address</button></div>`;
+  if(u.role==='donor')h+=`<div class=card><h2>Donate a book</h2><input id=dt placeholder="Book name"><input id=dc placeholder="Category"><button onclick="go('donate',{title:v('dt'),category:v('dc')})">Add book</button>${S.mine.map(m=>`<div class=row>${esc(m.title)}: ${m.status}</div>`).join('')}</div>`;
+  if(u.role==='reader'){
+    h+=`<div class=card><h2>Books</h2>${CAT.length?CAT.map((c,i)=>`<div class=row><b>${esc(c.title)}</b> <small>${esc(c.category)}, ${c.available?'available':'not available now'}</small><br><input id=d${i} type=number min=1 placeholder="Days to keep" style="width:9em"><input id=p${i} type=number min=0 max=1000 placeholder="Points to use" style="width:9em"><input id=r${i} placeholder="UPI reference"><button onclick="go('order',{title:CAT[${i}].title,days:v('d${i}'),points:v('p${i}'),upiRef:v('r${i}')})">Order for Rs 1,000</button></div>`).join(''):'<p>No books yet. Check back soon or add a title to your wishlist.</p>'}
+    <div class=row><input id=wt placeholder="Book title to wishlist"><button class=s onclick="go('wish',{title:v('wt')})">Add to wishlist</button> <small>${S.wish.map(esc).join(', ')}</small></div></div>`;
+    h+=`<div class=card><h2>Your orders</h2>${S.orders.map(o=>`<div class=row>${esc(o.title)}: ${o.status} ${['waiting','placed'].includes(o.status)?`<button class=s onclick="go('cancel',{orderId:${o.id}})">Cancel</button>`:''}</div>`).join('')||'<p>No orders yet.</p>'}</div>`;
+    h+=`<div class=card><h2>Your loans</h2>${S.loans.map(l=>`<div class=row>${esc(l.title)}: due ${l.due}${l.returned?', returned':''}${l.remind?' <b>(due soon, please keep it ready for pickup)</b>':''}${l.penalty?`, penalty Rs ${l.penalty}`:''} ${!l.ext&&!l.returned?`<button class=s onclick="go('extend',{loanId:${l.id}})">Extend one week</button>`:''}</div>`).join('')||'<p>No books borrowed.</p>'}</div>`}
+  if(A){
+    h+=`<div class=card><h2>Addresses to check</h2>${A.pending.map(x=>`<div class=row>${esc(x.name)} (${x.role}), ${esc(x.mobile)}, ${esc(x.society)} ${esc(x.pin)} <a href="${esc(x.maps)}" target=_blank rel=noopener>map</a> <button onclick="go('admin/validate',{userId:${x.id},ok:true})">Approve</button><button class=s onclick="go('admin/validate',{userId:${x.id},ok:false})">Reject</button></div>`).join('')||'<p>Nothing waiting.</p>'}</div>`;
+    h+=`<div class=card><h2>Courier tasks</h2>${A.orders.map(o=>`<div class=row><b>${esc(o.title)}</b> (${o.status}${o.upi?', UPI Rs '+o.upi+' ref '+esc(o.upiRef)+(o.verified?' verified':' not verified'):''})<br>Pick up from: ${P(o.from)}<br>Deliver to: ${P(o.to)}<br>${o.upi&&!o.verified?`<button onclick="go('admin/verify',{orderId:${o.id}})">Confirm UPI received</button>`:''}${o.status==='placed'&&o.verified?`<button onclick="go('admin/ship',{orderId:${o.id}})">Mark shipped</button>`:''}${o.status==='shipped'?`<button onclick="{const d=dt();if(d)go('admin/deliver',{orderId:${o.id},date:d})}">Record delivery date</button>`:''}${o.status==='waiting'?'<small>Waiting in the queue for this copy</small>':''}</div>`).join('')||'<p>No open orders.</p>'}</div>`;
+    h+=`<div class=card><h2>Loans and penalties</h2>${A.loans.map(l=>`<div class=row>${esc(l.reader)}, ${esc(l.title)}, due ${l.due}${l.returned?', collected '+l.returned:''}, late ${l.late} days, penalty Rs ${l.penalty}${l.paid?' (cleared)':''} ${!l.returned?`<button onclick="{const d=dt();if(d)go('admin/collect',{loanId:${l.id},date:d})}">Record courier collection</button><button class=s onclick="{const n=ask('Delay in days, confirmed by the courier provider','1');if(n)go('admin/courierdelay',{loanId:${l.id},days:n})}">Courier missed pickup</button>`:''}${l.flag15&&!l.blacklisted?`<button onclick="go('admin/blacklist',{loanId:${l.id}})">Blacklist and close account</button>`:''}${l.returned&&l.penalty&&!l.paid?`<button onclick="go('admin/clearpenalty',{loanId:${l.id}})">Mark dues cleared</button>`:''}</div>`).join('')||'<p>No loans yet.</p>'}</div>`;
+    h+=`<div class=card><h2>Copies</h2>${A.copies.map(c=>`<div class=row>${esc(c.title)}: ${c.status} (at ${c.at}) ${c.status!=='archived'?`<button class=s onclick="go('admin/archive',{copyId:${c.id}})">Archive</button>`:''}</div>`).join('')||'<p>No copies yet.</p>'}</div>`;
+    h+=`<div class=card><h2>Blacklist</h2>${A.blacklisted.map(x=>`<div class=row>${esc(x.email)} <button onclick="go('admin/reregister',{userId:${x.id}})">Re-register (after checks)</button></div>`).join('')||'<p>Empty.</p>'}</div>`}
+  $('#app').innerHTML=h}
+load();
+</script></body></html>
